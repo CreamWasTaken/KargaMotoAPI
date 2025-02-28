@@ -21,7 +21,7 @@ router.post('/api/verify-otp', controller.verifyOTP);
 
 //booking
 router.post('/api/book-service', authMiddleware, controller.bookService);
-
+router.get('/api/get-bookings', authMiddleware, controller.getBookings);
 
 
 module.exports = router; 

@@ -7,7 +7,7 @@ const cors = require("cors");
 const session = require('express-session');
 
 const app = express();
-
+const PORT = 5000;
 
 app.use(session({
     secret: process.env.SESSION_SECRET, // Ensure you have this in your .env file
@@ -28,14 +28,13 @@ connection();
 // Routes
 app.use("/", routes);
 
-// Server setup
-const PORT = 5000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
-});
+// Internet
+// app.listen(PORT, '0.0.0.0', () => {
+//     console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
+// });
 
-// Server setup
-// const PORT = 5000;
-// app.listen(PORT, 'localhost', () => {
-//     console.log(`KargaMoto API is running on http://localhost:${PORT}`);
-// }); 
+// Localhost
+
+app.listen(PORT, 'localhost', () => {
+    console.log(`KargaMoto API is running on http://localhost:${PORT}`);
+}); 

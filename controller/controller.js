@@ -251,6 +251,14 @@ exports.bookService = async (req, res) => {
   }
 }
 
+exports.getBookings = async (req, res) => {
+  try {
+    const bookings = await Bookings.find({ status: "requested" });
+    res.status(200).json({ data: bookings });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
 
 
 
