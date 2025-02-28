@@ -22,24 +22,14 @@ const FormatNumber = (phone_number) => {
   return formattedNumber;
 };
 
-const sendOTP = async (phone_number) => {
+const sendOTP = async (req, phone_number) => {
   const otp = Math.floor(100000 + Math.random() * 900000);
   const message = `Your OTP is ${otp}`;
   const formattedPhoneNumber = FormatNumber(phone_number);
 
-  // Initialize OTP attempts if not already set
-  if (!req.session.otpAttempts) {
-    req.session.otpAttempts = 0;
-  }
-
   // Check if OTP can be resent
   if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
     throw new Error("Please wait before requesting a new OTP.");
-  }
-
-  // Check if maximum OTP attempts have been reached
-  if (req.session.otpAttempts >= 3) {
-    throw new Error("Maximum OTP attempts reached. Please try again later.");
   }
 
   // Send OTP using Semaphore API
@@ -60,10 +50,9 @@ const sendOTP = async (phone_number) => {
 
     try {
       req.session.otp = otp;
-      req.session.otpExpiry = Date.now() + 3 * 60 * 1000; // Set expiration to 3 minutes
+      req.session.otpExpiry = Date.now() + 5 * 60 * 1000;
       req.session.lastOTPSent = Date.now(); // Track the last OTP sent time
-      req.session.otpAttempts += 1; // Increment OTP attempts
-      console.log("session OTP (login):", req.session.otp);
+      console.log("session OTP (login):", req.session.otp, "Type of OTP:", typeof req.session.otp);
       resolve();
     } catch (error) {
       console.error("Error saving OTP to session:", error.message);
@@ -169,15 +158,15 @@ exports.userLogin = async (req, res) => {
       return res.status(200).json({ status: "0" });
     } else {
       try {
-        await sendOTP(phone_number); // Use the sendOTP function
+        await sendOTP(req, phone_number); 
         res.status(200).json({ status: "1", user_type: user.user_type });
       } catch (error) {
         console.error("Error sending OTP:", error.message);
-        res.status(500).json({ error: "Internal Server Error", status: "Error" });
+        res.status(400).json({ error: "Failed to send OTP", status: "Error" });
       }
     }
   } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", status: "Error" });
+    res.status(400).json({ error: err.message, status: "Error" });
   }
 };
 
@@ -195,14 +184,13 @@ exports.verifyOTP = async (req, res) => {
       return res.status(404).json({ error: "User Not Found" });
     }
 
-    console.log("session OTP (verify):", req.session.otp);
 
     // Check if OTP has expired
     if (Date.now() > req.session.otpExpiry) {
       req.session.otp = null; // Clear OTP
       return res.status(400).json({ error: "OTP has expired" });
     }
-
+    console.log("session OTP (verify):", req.session.otp, "Type of OTP:", typeof req.session.otp);
     // Verify OTP
     if (req.session.otp !== otp) {
       return res.status(400).json({ error: "Invalid OTP" });
