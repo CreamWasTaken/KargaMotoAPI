@@ -10,7 +10,7 @@ const app = express();
 const PORT = 5000;
 
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Ensure you have this in your .env file
+    secret: process.env.SESSION_SECRET, 
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Set to true if using HTTPS
@@ -19,8 +19,8 @@ app.use(session({
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Built-in middleware to parse JSON
-app.use(express.urlencoded({ extended: true })); // To handle URL encoded data
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true })); 
 
 // Database connection
 connection();
@@ -29,12 +29,16 @@ connection();
 app.use("/", routes);
 
 // Internet
-// app.listen(PORT, '0.0.0.0', () => {
-//     console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
-// });
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
+});
 
 // Localhost
+// app.listen(PORT, 'localhost', () => {
+//     console.log(`KargaMoto API is running on http://localhost:${PORT}`);
+// }); 
 
-app.listen(PORT, 'localhost', () => {
-    console.log(`KargaMoto API is running on http://localhost:${PORT}`);
-}); 
+
+//to do 
+
+//add logic that when 3 tries on OTP wait one hour to send again

@@ -9,28 +9,90 @@ const axios = require('axios');
 
 const saltrounds = 10;
 
+//formats phone number 09123456789
+const FormatNumber = (phone_number) => {
+  let formattedNumber = phone_number.toString().replace(/\s+/g, '').replace(/-/g, '');
 
+  if (formattedNumber.startsWith('+63')) {
+    formattedNumber = '0' + formattedNumber.slice(3);
+  } else if (!formattedNumber.startsWith('0')) {
+    formattedNumber = '0' + formattedNumber;
+  }
+
+  return formattedNumber;
+};
+
+const sendOTP = async (phone_number) => {
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  const message = `Your OTP is ${otp}`;
+  const formattedPhoneNumber = FormatNumber(phone_number);
+
+  // Initialize OTP attempts if not already set
+  if (!req.session.otpAttempts) {
+    req.session.otpAttempts = 0;
+  }
+
+  // Check if OTP can be resent
+  if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
+    throw new Error("Please wait before requesting a new OTP.");
+  }
+
+  // Check if maximum OTP attempts have been reached
+  if (req.session.otpAttempts >= 3) {
+    throw new Error("Maximum OTP attempts reached. Please try again later.");
+  }
+
+  // Send OTP using Semaphore API
+  return new Promise(async (resolve, reject) => {
+    // try {
+    //   const response = await axios.post("https://api.semaphore.co/api/v4/messages", {
+    //     apikey: process.env.SEMAPHORE_API_KEY,
+    //     number: formattedPhoneNumber,
+    //     message: message
+    //   });
+    //   console.log("Semaphore API response:", response.data);
+    //   console.log("Phone number:", formattedPhoneNumber);
+    //   console.log("Message:", message);
+    // } catch (error) {
+    //   console.log("Error sending OTP via Semaphore API:", error.message);
+    //   return reject(new Error("Failed to send OTP"));
+    // }
+
+    try {
+      req.session.otp = otp;
+      req.session.otpExpiry = Date.now() + 3 * 60 * 1000; // Set expiration to 3 minutes
+      req.session.lastOTPSent = Date.now(); // Track the last OTP sent time
+      req.session.otpAttempts += 1; // Increment OTP attempts
+      console.log("session OTP (login):", req.session.otp);
+      resolve();
+    } catch (error) {
+      console.error("Error saving OTP to session:", error.message);
+      return reject(new Error("Failed to save OTP to session"));
+    }
+  });
+};
 
 //temporary
 exports.createUser = async (req, res) => {
     try {
       const { full_name, phone_number,  } = req.body;
+      const formattedPhoneNumber = FormatNumber(phone_number);
       const user_type = "passenger";
       const verification = "No"
   
-      if (!full_name || !phone_number || !user_type || !verification) {
+      if (!full_name || !formattedPhoneNumber || !user_type || !verification) {
         return res.status(400).json({ error: "All fields are required" });
       }
 
       // Check if phone number already exists
-      const phoneExists = await Users.findOne({ phone_number });
+      const phoneExists = await Users.findOne({ phone_number: formattedPhoneNumber });
       if (phoneExists) {
         return res.status(400).json({ error: "Phone number already exists" });
       }
   
       const user = new Users({
         full_name,
-        phone_number,
+        phone_number: formattedPhoneNumber,
         user_type,
         verification,
         created_at: Date.now() 
@@ -95,58 +157,39 @@ exports.getUserDetails = async (req, res) => {
 //Authentication
 exports.userLogin = async (req, res) => {
   try {
-
     const { phone_number } = req.body;
-    const user = await Users.findOne({ phone_number });
-
+    const formattedPhoneNumber = FormatNumber(phone_number);
+    
+    console.log("formattedPhoneNumber:", formattedPhoneNumber);
+    
+    const user = await Users.findOne({ phone_number: formattedPhoneNumber });
+    
     if (!user) {
-    console.log("User Not Found tick");
-    return res.status(200).json({ status: "0" });
-    }else{
-
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    const message = `Your OTP is ${otp}`;
-
-    // Send OTP using Semaphore API
-    // try {
-    //   const response = await axios.post("https://api.semaphore.co/api/v4/messages", {
-    //     apikey: process.env.SEMAPHORE_API_KEY,
-    //     number: phone_number,
-    //     message: message
-    //   });
-    //   console.log("Semaphore API response:", response.data);
-    //   console.log("Phone number:", phone_number);
-    //   console.log("Message:", message);
-    // } catch (error) {
-    //   console.log("Error sending OTP via Semaphore API:", error.message);
-    //   throw error;
-    // }
-
-    // Save OTP to user document for verification
+      console.log("User Not Found tick");
+      return res.status(200).json({ status: "0" });
+    } else {
       try {
-        req.session.otp = otp;
-        req.session.otpExpiry = Date.now() + 5 * 60 * 1000;
-        console.log("session OTP (login):", req.session.otp);
+        await sendOTP(phone_number); // Use the sendOTP function
+        res.status(200).json({ status: "1", user_type: user.user_type });
       } catch (error) {
-        console.error("Error saving OTP to session:", error.message);
-        throw error;
+        console.error("Error sending OTP:", error.message);
+        res.status(500).json({ error: "Internal Server Error", status: "Error" });
       }
-
-    res.status(200).json({ status: "1", user_type: user.user_type });
     }
   } catch (err) {
-    res.status(400).json({ error: err.message, status: "Error" });
+    res.status(500).json({ error: "Internal Server Error", status: "Error" });
   }
 };
 
 exports.verifyOTP = async (req, res) => {
   try {
     const { phone_number, otp } = req.body;
+    const formattedPhoneNumber = FormatNumber(phone_number);
 
     console.log("body OTP:", otp);
 
     // Check if phone number exists
-    const user = await Users.findOne({ phone_number });
+    const user = await Users.findOne({ phone_number: formattedPhoneNumber });
 
     if (!user) {
       return res.status(404).json({ error: "User Not Found" });
@@ -181,16 +224,18 @@ exports.verifyOTP = async (req, res) => {
 exports.RegisterDriver = async (req, res) => {
   try {
       const { full_name, phone_number, license_number, vehicle, status, rating } = req.body;
+      const formattedPhoneNumber = FormatNumber(phone_number);
       const user_type = "driver";
       const verification = "Yes";
-      
+     
+
       //check if all fields are provided
-      if (!full_name || !phone_number || !user_type || !verification) {
+      if (!full_name || !formattedPhoneNumber || !user_type || !verification) {
         return res.status(400).json({ error: "All fields are required" });
       }
 
       // Check if phone number already exists
-      const phoneExists = await Users.findOne({ phone_number });
+      const phoneExists = await Users.findOne({ phone_number: formattedPhoneNumber });
       if (phoneExists) {
         return res.status(400).json({ error: "Phone number already exists" });
       }
@@ -198,7 +243,7 @@ exports.RegisterDriver = async (req, res) => {
       //create user
       const user = new Users({
         full_name,
-        phone_number,
+        phone_number: formattedPhoneNumber,
         user_type,
         verification,
         created_at: Date.now() 
