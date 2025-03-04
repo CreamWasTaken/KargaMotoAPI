@@ -26,6 +26,13 @@ app.use(express.urlencoded({ extended: true }));
 connection();
 
 // Routes
+app.use("/", (req, res, next) => {
+    if (req.path === '/') {
+        res.send("KargaMoto API is running");
+    } else {
+        next();
+    }
+});
 app.use("/", routes);
 
 // Internet
