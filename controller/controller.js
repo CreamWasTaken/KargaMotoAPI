@@ -28,9 +28,9 @@ const sendOTP = async (req, phone_number) => {
   const formattedPhoneNumber = FormatNumber(phone_number);
 
   // Check if OTP can be resent
-  if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
-    throw new Error("Please wait before requesting a new OTP.");
-  }
+  // if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
+  //   throw new Error("Please wait before requesting a new OTP.");
+  // }   
 
   // Send OTP using Semaphore API
   return new Promise(async (resolve, reject) => {
