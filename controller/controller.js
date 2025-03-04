@@ -23,7 +23,9 @@ const FormatNumber = (phone_number) => {
 };
 
 const sendOTP = async (req, phone_number) => {
-  const otp = Math.floor(100000 + Math.random() * 900000);
+
+  // const otp = Math.floor(100000 + Math.random() * 900000);
+  const otp = 123456;
   const message = `Your OTP is ${otp}`;
   const formattedPhoneNumber = FormatNumber(phone_number);
 
