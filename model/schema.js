@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const usersSchema = new mongoose.Schema({
   full_name: { type: String, required: true },
   phone_number: { type: String, required: true, unique: true },
-  user_type: { type: String, enum: ["passenger", "driver"], required: true, default: "passenger" },
+  gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+  user_type: { type: String, enum: ["Passenger", "Driver"], required: true, default: "Passenger" },
   created_at: { type: Date, default: Date.now },
   verification: { type: String, enum: ["Yes", "No"], required: true,default: "No" },
   overall_ratings: { type: Number, min: 0, max: 5, default: 0 },

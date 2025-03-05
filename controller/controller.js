@@ -24,8 +24,10 @@ const FormatNumber = (phone_number) => {
 
 const sendOTP = async (req, phone_number) => {
 
+  //change if needed only added for hosting purposes
   // const otp = Math.floor(100000 + Math.random() * 900000);
-  const otp = 123456;
+  const otp = 123456; 
+
   const message = `Your OTP is ${otp}`;
   const formattedPhoneNumber = FormatNumber(phone_number);
 
@@ -66,7 +68,7 @@ const sendOTP = async (req, phone_number) => {
 //temporary
 exports.createUser = async (req, res) => {
     try {
-      const { full_name, phone_number,  } = req.body;
+      const { full_name, phone_number, gender } = req.body;
       const formattedPhoneNumber = FormatNumber(phone_number);
       const user_type = "passenger";
       const verification = "No"
@@ -86,7 +88,8 @@ exports.createUser = async (req, res) => {
         phone_number: formattedPhoneNumber,
         user_type,
         verification,
-        created_at: Date.now() 
+        created_at: Date.now() ,
+        gender: gender
       });
   
       await user.save();
@@ -134,10 +137,24 @@ exports.testMiddleware = async (req, res) => {
 //example code for getting user details
 exports.getUserDetails = async (req, res) => {
   try {
-    const { user_id } = req.body;
-    const user = await Users.findById(user_id);
+    console.log("User in request:", req.user); // Debugging: Check if _id exists
+    const userId = req.user._id;
+    const user = await Users.findById(userId);
 
-    res.status(200).json(user);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.user_type === "driver") {
+      const driver = await Drivers.findOne({ driver_id: userId });
+      if (driver) {
+        return res.status(200).json({ user: user, driver: driver });
+      } else {
+        return res.status(404).json({ error: "Driver details not found" });
+      }
+    }
+
+    res.status(200).json({ user: user });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -258,6 +275,8 @@ exports.RegisterDriver = async (req, res) => {
       }
 } 
 
+
+//booking service
 exports.bookService = async (req, res) => {
   try {
     const passenger_id = req.user.id; //user_id from token
@@ -294,6 +313,19 @@ exports.getBookings = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 }
+
+exports.cancelBookings = async (req, res) => {
+  try {
+    const { booking_id } = req.body;
+    const booking = await Bookings.findByIdAndUpdate(booking_id, { status: "cancelled" });
+    res.status(200).json({ status: "Booking cancelled successfully" });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+
+
 
 
 

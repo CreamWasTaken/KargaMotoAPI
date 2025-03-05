@@ -49,3 +49,6 @@ app.listen(PORT, '0.0.0.0', () => {
 //to do 
 
 //add logic that when 3 tries on OTP wait one hour to send again
+
+//to fix error on OTP change to check to x
+
