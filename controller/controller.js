@@ -145,7 +145,7 @@ exports.getUserDetails = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (user.user_type === "driver") {
+    if (user.user_type === "Driver") {
       const driver = await Drivers.findOne({ driver_id: userId });
       if (driver) {
         return res.status(200).json({ user: user, driver: driver });
@@ -227,6 +227,11 @@ exports.verifyOTP = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+exports.userLogout = async (req, res) => {
+  req.session.destroy();
+  res.status(200).json({ status: "User logged out successfully" });
+}
 
 exports.RegisterDriver = async (req, res) => {
   try {

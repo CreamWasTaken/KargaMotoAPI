@@ -17,6 +17,7 @@ router.post('/api/register-driver', controller.RegisterDriver);
 //Authentication
 router.post('/api/login', controller.userLogin);
 router.post('/api/verify-otp', controller.verifyOTP);
+router.post('/api/logout', controller.userLogout);
 
 //get user details
 router.get('/api/get-user-details', authMiddleware, controller.getUserDetails);

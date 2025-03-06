@@ -52,3 +52,5 @@ app.listen(PORT, '0.0.0.0', () => {
 
 //to fix error on OTP change to check to x
 
+//add gender and capital P and D for passenger and driver on hosted DB
+
