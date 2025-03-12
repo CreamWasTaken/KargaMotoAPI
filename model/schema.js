@@ -26,7 +26,7 @@ const driversSchema = new mongoose.Schema({
 
 const bookingsSchema = new mongoose.Schema({
   passenger_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users", required: true },
-  driver_id: { type: mongoose.Schema.Types.ObjectId, ref: "Drivers", required: true },
+  driver_id: { type: mongoose.Schema.Types.ObjectId, ref: "Drivers"},
   booking_type: { type: String, enum: ["Delivery", "Ride"], required: true },
   pickup_location: {
     latitude: { type: Number, required: true },

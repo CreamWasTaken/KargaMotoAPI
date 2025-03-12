@@ -70,7 +70,7 @@ exports.createUser = async (req, res) => {
     try {
       const { full_name, phone_number, gender } = req.body;
       const formattedPhoneNumber = FormatNumber(phone_number);
-      const user_type = "passenger";
+      const user_type = "Passenger";
       const verification = "No"
   
       if (!full_name || !formattedPhoneNumber || !user_type || !verification) {
@@ -230,6 +230,7 @@ exports.verifyOTP = async (req, res) => {
 
 exports.userLogout = async (req, res) => {
   req.session.destroy();
+  console.log("Session destroyed");
   res.status(200).json({ status: "User logged out successfully" });
 }
 
@@ -284,9 +285,12 @@ exports.RegisterDriver = async (req, res) => {
 //booking service
 exports.bookService = async (req, res) => {
   try {
-    const passenger_id = req.user.id; //user_id from token
-    const { pickup_location, dropoff_location, booking_type } = req.body;
+    const passenger_id = req.user._id; //user_id from token
+    const { pickup_location, dropoff_location, booking_type,fare } = req.body;
+    const status = "requested";
     
+
+
     //check if all fields are provided
       if (!pickup_location || !dropoff_location || !booking_type) {
         return res.status(400).json({ error: "All fields are required" });
@@ -297,7 +301,8 @@ exports.bookService = async (req, res) => {
         pickup_location: pickup_location,
         dropoff_location: dropoff_location,
         booking_type: booking_type,
-        status: "requested",
+        status: status,
+        fare: fare,
         created_at: Date.now()
       })
 
@@ -308,6 +313,28 @@ exports.bookService = async (req, res) => {
   }catch (err) {
     res.status(400).json({ error: err.message });
   }
+ //example body of booking
+  // {
+  //   "booking_type": "Ride",
+  //   "pickup_location": {
+  //     "latitude": 40.712776,
+  //     "longitude": -74.005974,
+  //     "address": "123 Main Street, New York, NY"
+  //   },
+  //   "dropoff_location": {
+  //     "latitude": 40.73061,
+  //     "longitude": -73.935242,
+  //     "address": "456 Elm Street, Brooklyn, NY"
+  //   },
+  //   "fare": 25.5,
+  //   "status": "requested",
+  //   "end_time": "2025-03-07T12:30:00Z",
+  //   "rating": {
+  //     "passenger_rating": 0,
+  //     "driver_rating": 0
+  //   }
+  // }
+  
 }
 
 exports.getBookings = async (req, res) => {
