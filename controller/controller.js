@@ -363,33 +363,34 @@ exports.addFavorites = async (req, res) => {
   try {
     const { home, work } = req.body;
     const user_id = req.user._id;
-    
-    //checks if either home and work is provided
+
+    // Check if either home or work is provided
     if (!home && !work) {
       return res.status(400).json({ error: "Either home or work must be provided" });
     }
 
-    //if home exist but fields are incomplete
+    // Validate home input
     if (home && (!home.latitude || !home.longitude || !home.address)) {
       return res.status(400).json({ error: "Home fields are incomplete" });
     }
 
-    //same logic as home
+    // Validate work input
     if (work && (!work.latitude || !work.longitude || !work.address)) {
       return res.status(400).json({ error: "Work fields are incomplete" });
     }
 
-    //check if user already has favorite locations
+    // Find existing favorites for the user
     let favorite = await Favorites.findOne({ user_id });
 
-    //if user already has favorite locations update them
-    if (favorite) {
-      if (home) favorite.home = home;
-      if (work) favorite.work = work;
-    } else {
-      favorite = new Favorites({ user_id, home, work });
+    if (!favorite) {
+      // Create a new favorite document if not found
+      favorite = new Favorites({ user_id, homes: [], works: [] });
     }
-   
+
+    // Append new locations to the arrays instead of overwriting
+    if (home) favorite.homes.push(home);
+    if (work) favorite.works.push(work);
+
     await favorite.save();
 
     res.status(200).json({ status: "Favorites updated successfully", data: favorite });
@@ -397,6 +398,19 @@ exports.addFavorites = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+// example body for favorites
+// {
+//   "work": {
+//     "latitude": 37.32,
+//     "longitude": -121.83,
+//     "address": "dola"
+//   },
+//   "home": {
+//     "latitude": 37.3082,
+//     "longitude": -121.813,
+//     "address": "ls"
+//   }
+// }
 
 
 

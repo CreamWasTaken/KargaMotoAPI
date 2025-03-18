@@ -53,16 +53,20 @@ const bookingsSchema = new mongoose.Schema({
 
 const favoriteSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users", required: true },
-  home: {
-    latitude: { type: Number, required: false },
-    longitude: { type: Number, required: false },
-    address: { type: String, required: false }
-  },
-  work: {
-    latitude: { type: Number, required: false },
-    longitude: { type: Number, required: false },
-    address: { type: String, required: false }
-  }
+  homes: [
+    {
+      latitude: { type: Number, required: false },
+      longitude: { type: Number, required: false },
+      address: { type: String, required: false }
+    }
+  ],
+  works: [
+    {
+      latitude: { type: Number, required: false },
+      longitude: { type: Number, required: false },
+      address: { type: String, required: false }
+    }
+  ]
 });
 
 const Users = mongoose.model("Users", usersSchema);
