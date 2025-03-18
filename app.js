@@ -48,9 +48,14 @@ app.listen(PORT, '0.0.0.0', () => {
 
 //to do 
 
-//add logic that when 3 tries on OTP wait one hour to send again
+//responsive OTP button Deposit button
 
-//to fix error on OTP change to check to x
+//add refresh tokens or logic behind 1 hour token expiry logout after token expiry
 
-//add gender and capital P and D for passenger and driver on hosted DB
+//add auto logout after token expiry
+
+//change async storage to 
+
+//add to pin homes and works
+
 

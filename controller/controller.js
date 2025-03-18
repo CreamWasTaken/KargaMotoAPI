@@ -1,7 +1,7 @@
 require("dotenv").config(); 
 const mongoose = require("mongoose");
 const express = require('express');
-const { Users, Drivers,Bookings } = require("../model/schema");
+const { Users, Drivers,Bookings,Favorites } = require("../model/schema");
 const bcrypt = require('bcrypt');
 const jwt = require("jsonwebtoken");
 //const cookieParser = require('cookie-parser');
@@ -22,48 +22,7 @@ const FormatNumber = (phone_number) => {
   return formattedNumber;
 };
 
-const sendOTP = async (req, phone_number) => {
 
-  //change if needed only added for hosting purposes
-  // const otp = Math.floor(100000 + Math.random() * 900000);
-  const otp = 123456; 
-
-  const message = `Your OTP is ${otp}`;
-  const formattedPhoneNumber = FormatNumber(phone_number);
-
-  // Check if OTP can be resent
-  // if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
-  //   throw new Error("Please wait before requesting a new OTP.");
-  // }   
-
-  // Send OTP using Semaphore API
-  return new Promise(async (resolve, reject) => {
-    // try {
-    //   const response = await axios.post("https://api.semaphore.co/api/v4/messages", {
-    //     apikey: process.env.SEMAPHORE_API_KEY,
-    //     number: formattedPhoneNumber,
-    //     message: message
-    //   });
-    //   console.log("Semaphore API response:", response.data);
-    //   console.log("Phone number:", formattedPhoneNumber);
-    //   console.log("Message:", message);
-    // } catch (error) {
-    //   console.log("Error sending OTP via Semaphore API:", error.message);
-    //   return reject(new Error("Failed to send OTP"));
-    // }
-
-    try {
-      req.session.otp = otp;
-      req.session.otpExpiry = Date.now() + 5 * 60 * 1000;
-      req.session.lastOTPSent = Date.now(); // Track the last OTP sent time
-      console.log("session OTP (login):", req.session.otp, "Type of OTP:", typeof req.session.otp);
-      resolve();
-    } catch (error) {
-      console.error("Error saving OTP to session:", error.message);
-      return reject(new Error("Failed to save OTP to session"));
-    }
-  });
-};
 
 //temporary
 exports.createUser = async (req, res) => {
@@ -189,6 +148,49 @@ exports.userLogin = async (req, res) => {
   }
 };
 
+const sendOTP = async (req, phone_number) => {
+
+  //change if needed only added for hosting purposes
+  // const otp = Math.floor(100000 + Math.random() * 900000);
+  const otp = 123456; 
+
+  const message = `Your OTP is ${otp}`;
+  const formattedPhoneNumber = FormatNumber(phone_number);
+
+  // Check if OTP can be resent
+  // if (req.session.lastOTPSent && Date.now() - req.session.lastOTPSent < 60 * 1000) {
+  //   throw new Error("Please wait before requesting a new OTP.");
+  // }   
+
+  // Send OTP using Semaphore API
+  return new Promise(async (resolve, reject) => {
+    // try {
+    //   const response = await axios.post("https://api.semaphore.co/api/v4/messages", {
+    //     apikey: process.env.SEMAPHORE_API_KEY,
+    //     number: formattedPhoneNumber,
+    //     message: message
+    //   });
+    //   console.log("Semaphore API response:", response.data);
+    //   console.log("Phone number:", formattedPhoneNumber);
+    //   console.log("Message:", message);
+    // } catch (error) {
+    //   console.log("Error sending OTP via Semaphore API:", error.message);
+    //   return reject(new Error("Failed to send OTP"));
+    // }
+
+    try {
+      req.session.otp = otp;
+      req.session.otpExpiry = Date.now() + 5 * 60 * 1000;
+      req.session.lastOTPSent = Date.now(); // Track the last OTP sent time
+      console.log("session OTP (login):", req.session.otp, "Type of OTP:", typeof req.session.otp);
+      resolve();
+    } catch (error) {
+      console.error("Error saving OTP to session:", error.message);
+      return reject(new Error("Failed to save OTP to session"));
+    }
+  });
+};
+
 exports.verifyOTP = async (req, res) => {
   try {
     const { phone_number, otp } = req.body;
@@ -219,7 +221,7 @@ exports.verifyOTP = async (req, res) => {
     req.session.otp = null;
 
     // Generate token after successful OTP verification
-    const token = jwt.sign({ user_id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ user_id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' }); //refresh token
     console.log("token:", token);
 
     res.status(200).json({ status: "OTP verified", user_type: user.user_type, token: token });
@@ -313,6 +315,9 @@ exports.bookService = async (req, res) => {
   }catch (err) {
     res.status(400).json({ error: err.message });
   }
+  
+}
+
  //example body of booking
   // {
   //   "booking_type": "Ride",
@@ -334,8 +339,6 @@ exports.bookService = async (req, res) => {
   //     "driver_rating": 0
   //   }
   // }
-  
-}
 
 exports.getBookings = async (req, res) => {
   try {
@@ -355,6 +358,45 @@ exports.cancelBookings = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 }
+
+exports.addFavorites = async (req, res) => {
+  try {
+    const { home, work } = req.body;
+    const user_id = req.user._id;
+    
+    //checks if either home and work is provided
+    if (!home && !work) {
+      return res.status(400).json({ error: "Either home or work must be provided" });
+    }
+
+    //if home exist but fields are incomplete
+    if (home && (!home.latitude || !home.longitude || !home.address)) {
+      return res.status(400).json({ error: "Home fields are incomplete" });
+    }
+
+    //same logic as home
+    if (work && (!work.latitude || !work.longitude || !work.address)) {
+      return res.status(400).json({ error: "Work fields are incomplete" });
+    }
+
+    //check if user already has favorite locations
+    let favorite = await Favorites.findOne({ user_id });
+
+    //if user already has favorite locations update them
+    if (favorite) {
+      if (home) favorite.home = home;
+      if (work) favorite.work = work;
+    } else {
+      favorite = new Favorites({ user_id, home, work });
+    }
+   
+    await favorite.save();
+
+    res.status(200).json({ status: "Favorites updated successfully", data: favorite });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 
 

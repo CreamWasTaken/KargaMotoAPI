@@ -51,8 +51,23 @@ const bookingsSchema = new mongoose.Schema({
   }
 });
 
+const favoriteSchema = new mongoose.Schema({
+  user_id: { type: mongoose.Schema.Types.ObjectId, ref: "Users", required: true },
+  home: {
+    latitude: { type: Number, required: false },
+    longitude: { type: Number, required: false },
+    address: { type: String, required: false }
+  },
+  work: {
+    latitude: { type: Number, required: false },
+    longitude: { type: Number, required: false },
+    address: { type: String, required: false }
+  }
+});
+
 const Users = mongoose.model("Users", usersSchema);
 const Drivers = mongoose.model("Drivers", driversSchema);
 const Bookings = mongoose.model("Bookings", bookingsSchema);
+const Favorites = mongoose.model("Favorites", favoriteSchema);
 
-module.exports = { Users, Drivers, Bookings };
+module.exports = { Users, Drivers, Bookings,Favorites };
