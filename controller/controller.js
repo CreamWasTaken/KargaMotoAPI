@@ -412,6 +412,21 @@ exports.addFavorites = async (req, res) => {
 //   }
 // }
 
+exports.getFavorites = async (req, res) => {
+  try {
+    const user_id = req.user._id;
+    const favorite = await Favorites.findOne({ user_id });
+
+    if (!favorite) {
+      return res.status(404).json({ error: "Favorites not found" });
+    }
+
+    res.status(200).json({ data: favorite });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
 
 
 
