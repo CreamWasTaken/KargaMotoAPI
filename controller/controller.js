@@ -121,9 +121,6 @@ exports.getUserDetails = async (req, res) => {
 
 //code for updating user details
 exports.updateUserDetails = async (req, res) => {
-
-
-  
   try {
     const user_id = req.user._id; // Get from token
     const { gender, full_name } = req.body;
