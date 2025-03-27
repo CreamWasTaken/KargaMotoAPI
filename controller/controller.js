@@ -122,27 +122,28 @@ exports.getUserDetails = async (req, res) => {
 //code for updating user details
 exports.updateUserDetails = async (req, res) => {
   try {
-    const user_id = req.user._id; // Get from token
-    const { gender, full_name } = req.body;
-    
-      if(!!gender && !!full_name){
-        return res.status(400).json({ error: "All fields are required" });
-      }
-      
-    // Find user by ID and update details
-    const updatedUser = await User.findByIdAndUpdate(
-      user_id,
-      { gender, full_name },
-      { new: true, runValidators: true } // Return updated user & run validators
-    );
-    
+    // const user_id = req.user._id; // Get from token
+    const { gender, full_name,phone_number } = req.body;
+
+    if (!gender || !full_name || full_name.trim() === "") {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Update only `full_name` and `gender`
+    const updatedUser = await Users.findOneAndUpdate(
+      { phone_number }, // Find by phone_number
+      { $set: { gender, full_name: full_name.trim() } }, // Ensures only these fields are updated
+      { new: true, runValidators: true } // Returns updated document & runs validation
+);
+
     if (!updatedUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
     res.status(200).json({ message: "User updated successfully", user: updatedUser });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error("Update User Error:", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

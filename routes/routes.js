@@ -21,6 +21,7 @@ router.post('/api/logout', controller.userLogout);
 
 //get user details
 router.get('/api/get-user-details', authMiddleware, controller.getUserDetails);
+router.post('/api/update-user-details', controller.updateUserDetails);
 
 
 //booking
