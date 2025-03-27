@@ -30,5 +30,6 @@ router.get('/api/get-bookings', authMiddleware, controller.getBookings);
 //Favorite Locations
 router.post('/api/add-favorites', authMiddleware, controller.addFavorites);
 router.get('/api/get-favorites', authMiddleware, controller.getFavorites);
+router.post('/api/delete-favorites', authMiddleware, controller.deleteFavorites);
 
 module.exports = router; 

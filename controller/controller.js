@@ -93,7 +93,7 @@ exports.testMiddleware = async (req, res) => {
 
 }
 
-//example code for getting user details
+//code for getting user details
 exports.getUserDetails = async (req, res) => {
   try {
     console.log("User in request:", req.user); // Debugging: Check if _id exists
@@ -119,6 +119,35 @@ exports.getUserDetails = async (req, res) => {
   }
 }
 
+//code for updating user details
+exports.updateUserDetails = async (req, res) => {
+
+
+  
+  try {
+    const user_id = req.user._id; // Get from token
+    const { gender, full_name } = req.body;
+    
+      if(!!gender && !!full_name){
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+    // Find user by ID and update details
+    const updatedUser = await User.findByIdAndUpdate(
+      user_id,
+      { gender, full_name },
+      { new: true, runValidators: true } // Return updated user & run validators
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated successfully", user: updatedUser });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 
 //Authentication
@@ -411,6 +440,72 @@ exports.addFavorites = async (req, res) => {
 //     "address": "ls"
 //   }
 // }
+
+exports.deleteFavorites = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { addressId } = req.body; // Now expecting an ID instead of address string
+
+    if (!userId || !addressId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "User ID or address ID missing."
+      });
+    }
+
+    // First find the favorite document
+    const favorite = await Favorites.findOne({ user_id: userId });
+    
+    if (!favorite) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "No favorites found for this user." 
+      });
+    }
+
+    // Check if the ID exists in either homes or works
+    const homeIndex = favorite.homes.findIndex(h => h._id.equals(addressId));
+    const workIndex = favorite.works.findIndex(w => w._id.equals(addressId));
+
+    if (homeIndex === -1 && workIndex === -1) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Address ID not found in favorites."
+      });
+    }
+
+    // Build update query based on where the ID was found
+    const updateQuery = {
+      $pull: {}
+    };
+
+    if (homeIndex !== -1) {
+      updateQuery.$pull.homes = { _id: addressId };
+    } else {
+      updateQuery.$pull.works = { _id: addressId };
+    }
+
+    const updatedFavorite = await Favorites.findOneAndUpdate(
+      { user_id: userId },
+      updateQuery,
+      { new: true }
+    );
+
+    return res.status(200).json({ 
+      success: true, 
+      data: updatedFavorite,
+      message: "Address deleted successfully"
+    });
+
+  } catch (error) {
+    console.error("Error deleting favorite:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
 
 exports.getFavorites = async (req, res) => {
   try {

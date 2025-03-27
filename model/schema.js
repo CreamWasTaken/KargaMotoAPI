@@ -8,7 +8,6 @@ const usersSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now },
   verification: { type: String, enum: ["Yes", "No"], required: true,default: "No" },
   overall_ratings: { type: Number, min: 0, max: 5, default: 0 },
-  otp: { type: Number }
 });
 
 const driversSchema = new mongoose.Schema({

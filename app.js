@@ -48,14 +48,14 @@ app.listen(PORT, '0.0.0.0', () => {
 
 //to do 
 
-//responsive OTP button Deposit button
-
-//add refresh tokens or logic behind 1 hour token expiry logout after token expiry
 
 //add auto logout after token expiry
 
-//change async storage to 
 
-//add to pin homes and works
+//use hybrid set up for socket and rest api
+
+// Expo App->>Socket.IO (WebSocket): "lat/lng" (via socket.emit)
+//     Socket.IO->>MongoDB: Save data (optional)
+//     Socket.IO->>All Other Apps: Push update (via io.emit)
 
 
