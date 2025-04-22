@@ -57,7 +57,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
 });
 
-// Localhost
+// // Localhost
 // server.listen(PORT, 'localhost', () => {
 //     console.log(`KargaMoto API is running on http://localhost:${PORT}`);
 // }); 
