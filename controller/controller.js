@@ -317,7 +317,7 @@ exports.bookService = async (req, res) => {
     const io = req.app.get("io"); // ⬅️ grab io from express
 
     const passenger_id = req.user._id;
-    const { pickup_location, dropoff_location, booking_type, fare } = req.body;
+    const { pickup_location, dropoff_location, booking_type, fare,distance,duration } = req.body;
     const status = "requested";
 
     if (!pickup_location || !dropoff_location || !booking_type) {
@@ -331,6 +331,8 @@ exports.bookService = async (req, res) => {
       booking_type,
       status,
       fare,
+      distance,
+      duration,
       created_at: Date.now()
     });
 

@@ -38,6 +38,8 @@ const bookingsSchema = new mongoose.Schema({
     address: { type: String, required: true }
   },
   fare: { type: Number, required: true },
+  distance: { type: Number, required: true }, // in kilometers
+  duration: { type: Number, required: true }, // in seconds
   status: { type: String, enum: ["requested", "accepted", "ongoing", "completed", "cancelled"], required: true },
   start_time: { type: Date },
   end_time: { type: Date },
