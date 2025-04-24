@@ -1,31 +1,185 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Socket.IO Test</title>
+    <title>Real-Time Bookings Dashboard</title>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        .bookings-display {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #bookings-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .booking-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        .booking-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .booking-id {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        .status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.requested {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .location {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .location-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        button.disconnect {
+            background: #f44336;
+        }
+        button.disconnect:hover {
+            background: #d32f2f;
+        }
+        .connection-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .connected {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h1>Socket.IO Test Client</h1>
-    <button id="connect">Connect</button>
-    <button id="disconnect">Disconnect</button>
-    <button id="send">Send Hello</button>
-    <div id="messages"></div>
+    <div class="control-panel">
+        <h2>Control Panel</h2>
+        <div id="connection-status" class="connection-status disconnected">
+            Disconnected
+        </div>
+        <button id="connect">Connect</button>
+        <button id="disconnect" class="disconnect">Disconnect</button>
+        <button id="getBookings">Get Bookings</button>
+        <button id="toggleRealtime">Enable Real-time Updates</button>
+        
+        <div style="margin-top: 20px;">
+            <h3>Connection Log</h3>
+            <div id="messages" style="height: 200px; overflow-y: auto; background: white; padding: 10px; border-radius: 4px;"></div>
+        </div>
+    </div>
+
+    <div class="bookings-display">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Requested Bookings</h2>
+            <div id="bookings-count">0 bookings</div>
+        </div>
+        <div id="bookings-container"></div>
+    </div>
 
     <script>
         const socket = io('http://localhost:5000');
         const messages = document.getElementById('messages');
+        const bookingsContainer = document.getElementById('bookings-container');
+        const connectionStatus = document.getElementById('connection-status');
+        const bookingsCount = document.getElementById('bookings-count');
+        let realtimeUpdates = false;
         
         // Connection events
         socket.on('connect', () => {
-            addMessage('Connected to server!');
+            addMessage('Connected to server');
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.className = 'connection-status connected';
         });
         
         socket.on('disconnect', () => {
             addMessage('Disconnected from server');
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.className = 'connection-status disconnected';
         });
         
-        socket.on('hello-response', (data) => {
-            addMessage('Server says: ' + data.message);
+        // Handle incoming bookings data
+        socket.on('requestedBookingsData', (bookings) => {
+            addMessage(`Received ${bookings.length} requested bookings`);
+            updateBookingsDisplay(bookings);
+        });
+        
+        // Handle real-time updates
+        socket.on('bookingUpdate', (update) => {
+            if (realtimeUpdates) {
+                addMessage(`Real-time update: Booking ${update._id} status changed to ${update.status}`);
+                // In a real app, you would update the specific booking
+                // For simplicity, we'll refresh all bookings
+                socket.emit('getRequestedBookings');
+            }
+        });
+        
+        // Handle errors
+        socket.on('error', (error) => {
+            addMessage(`Error: ${error.message}`);
         });
         
         // Button handlers
@@ -37,12 +191,88 @@
             socket.disconnect();
         });
         
-        document.getElementById('send').addEventListener('click', () => {
-            socket.emit('hello', { name: 'Test Client' });
+        document.getElementById('getBookings').addEventListener('click', () => {
+            addMessage('Requesting current bookings...');
+            socket.emit('getRequestedBookings');
+        });
+        
+        document.getElementById('toggleRealtime').addEventListener('click', (e) => {
+            realtimeUpdates = !realtimeUpdates;
+            e.target.textContent = realtimeUpdates ? 
+                'Disable Real-time Updates' : 'Enable Real-time Updates';
+            addMessage(realtimeUpdates ? 
+                'Enabled real-time updates' : 'Disabled real-time updates');
+            
+            if (realtimeUpdates) {
+                socket.emit('getRequestedBookings');
+            }
         });
         
         function addMessage(msg) {
-            messages.innerHTML += `<p>${new Date().toLocaleTimeString()}: ${msg}</p>`;
+            const messageDiv = document.createElement('div');
+            messageDiv.innerHTML = `<p>${new Date().toLocaleTimeString()}: ${msg}</p>`;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function updateBookingsDisplay(bookings) {
+            bookingsContainer.innerHTML = '';
+            
+            if (bookings.length === 0) {
+                bookingsContainer.innerHTML = '<p>No requested bookings found</p>';
+                bookingsCount.textContent = '0 bookings';
+                return;
+            }
+            
+            bookingsCount.textContent = `${bookings.length} ${bookings.length === 1 ? 'booking' : 'bookings'}`;
+            
+            bookings.forEach(booking => {
+                const card = document.createElement('div');
+                card.className = 'booking-card';
+                
+                // Format locations
+                const pickupLocation = formatLocation(booking.pickup_location, 'Pickup');
+                const dropoffLocation = formatLocation(booking.dropoff_location, 'Dropoff');
+                
+                card.innerHTML = `
+                    <div class="booking-header">
+                        <span class="booking-id">${booking._id}</span>
+                        <span class="status requested">${booking.status}</span>
+                    </div>
+                    <p><strong>Passenger:</strong> ${booking.passenger_id}</p>
+                    <p><strong>Type:</strong> ${booking.booking_type}</p>
+                    ${pickupLocation}
+                    ${dropoffLocation}
+                    <p><strong>Fare:</strong> $${booking.fare.toFixed(2)}</p>
+                    <p><strong>Created:</strong> ${formatDate(booking.created_at)}</p>
+                `;
+                
+                bookingsContainer.appendChild(card);
+            });
+        }
+        
+        function formatLocation(location, title) {
+            if (!location) return '';
+            
+            let locationStr = '';
+            if (location.address) {
+                locationStr += `<div>${location.address}</div>`;
+            }
+            if (location.coordinates) {
+                locationStr += `<div>Coordinates: ${location.coordinates.join(', ')}</div>`;
+            }
+            
+            return `
+                <div class="location">
+                    <div class="location-title">${title}</div>
+                    ${locationStr}
+                </div>
+            `;
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
         }
     </script>
 </body>

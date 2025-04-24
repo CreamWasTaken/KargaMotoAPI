@@ -1,48 +1,62 @@
-const { Users, Drivers,Bookings,Favorites } = require("../model/schema");
-
+const { Bookings } = require("../model/schema");
 
 module.exports = (io, socket) => {
     console.log(`User connected: ${socket.id}`);
-  
-    // Join a specific chat room
-    socket.on('joinRoom', ({ roomId, username }) => {
-      socket.join(roomId);
-      console.log(`${username} joined room ${roomId}`);
-  
-      // Notify others in the room
-      socket.to(roomId).emit('userJoined', {
-        username,
-        message: `${username} has joined the chat.`,
-      });
+
+    // Get requested bookings
+    socket.on('getRequestedBookings', async () => {
+        try {
+            const requestedBookings = await Bookings.find({ status: "requested" })
+                .sort({ created_at: -1 }); // Newest first
+            socket.emit('requestedBookingsData', requestedBookings);
+        } catch (error) {
+            console.error('Error fetching requested bookings:', error);
+            socket.emit('error', { message: 'Failed to fetch requested bookings' });
+        }
     });
-  
-    // Handle sending messages
-    socket.on('sendMessage', ({ roomId, message, username }) => {
-      const payload = {
-        username,
-        message,
-        time: new Date().toISOString(),
-      };
-  
-      // Emit the message to everyone in the room
-      io.to(roomId).emit('receiveMessage', payload);
+
+    // Handle new booking creation
+    socket.on('newBooking', async (bookingData) => {
+        try {
+            // Validate and save to database
+            const newBooking = new Bookings(bookingData);
+            const savedBooking = await newBooking.save();
+            
+            // Broadcast to all connected clients
+            io.emit('bookingUpdate', {
+                action: 'created',
+                booking: savedBooking
+            });
+            
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            socket.emit('error', { message: 'Failed to create booking' });
+        }
     });
-  
-    // Leave room
-    socket.on('leaveRoom', ({ roomId, username }) => {
-      socket.leave(roomId);
-      console.log(`${username} left room ${roomId}`);
-  
-      // Notify others
-      socket.to(roomId).emit('userLeft', {
-        username,
-        message: `${username} has left the chat.`,
-      });
+
+    // Handle booking status updates
+    socket.on('updateBookingStatus', async ({ bookingId, newStatus }) => {
+        try {
+            const updatedBooking = await Bookings.findByIdAndUpdate(
+                bookingId,
+                { status: newStatus },
+                { new: true }
+            );
+            
+            if (updatedBooking) {
+                io.emit('bookingUpdate', {
+                    action: 'status-updated',
+                    booking: updatedBooking
+                });
+            }
+        } catch (error) {
+            console.error('Error updating booking status:', error);
+            socket.emit('error', { message: 'Failed to update booking status' });
+        }
     });
-  
+
     // Disconnect
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.id}`);
+        console.log(`User disconnected: ${socket.id}`);
     });
-  };
-  
+};

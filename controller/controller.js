@@ -314,36 +314,40 @@ exports.RegisterDriver = async (req, res) => {
 //booking service
 exports.bookService = async (req, res) => {
   try {
-    const passenger_id = req.user._id; //user_id from token
-    const { pickup_location, dropoff_location, booking_type,fare } = req.body;
+    const io = req.app.get("io"); // ⬅️ grab io from express
+
+    const passenger_id = req.user._id;
+    const { pickup_location, dropoff_location, booking_type, fare } = req.body;
     const status = "requested";
-    
 
+    if (!pickup_location || !dropoff_location || !booking_type) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
 
-    //check if all fields are provided
-      if (!pickup_location || !dropoff_location || !booking_type) {
-        return res.status(400).json({ error: "All fields are required" });
-      }
-      
-      const booking = new Bookings({
-        passenger_id: passenger_id,
-        pickup_location: pickup_location,
-        dropoff_location: dropoff_location,
-        booking_type: booking_type,
-        status: status,
-        fare: fare,
-        created_at: Date.now()
-      })
+    const booking = new Bookings({
+      passenger_id,
+      pickup_location,
+      dropoff_location,
+      booking_type,
+      status,
+      fare,
+      created_at: Date.now()
+    });
 
-      await booking.save();
+    const savedBooking = await booking.save();
 
-      res.status(201).json({ status: "Booking created successfully" });
+    io.emit("bookingUpdate", {
+      action: "created",
+      booking: savedBooking
+    });
 
-  }catch (err) {
+    res.status(201).json({ status: "Booking created successfully", _id: savedBooking._id });
+
+  } catch (err) {
     res.status(400).json({ error: err.message });
   }
-  
-}
+};
+
 
  //example body of booking
   // {

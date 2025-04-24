@@ -57,7 +57,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`KargaMoto API is running on http://0.0.0.0:${PORT}`);
 });
 
-// // Localhost
+// Localhost
 // server.listen(PORT, 'localhost', () => {
 //     console.log(`KargaMoto API is running on http://localhost:${PORT}`);
 // }); 
@@ -68,6 +68,13 @@ server.listen(PORT, '0.0.0.0', () => {
 
 //add auto logout after token expiry
 
+//add no internet connection screen
+
+//add no connection to sever screen
+
+//add in kargamotoapp to emit newbooking event to all drivers
+
+//profile setting screen is gone 
 
 //use hybrid set up for socket and rest api
 

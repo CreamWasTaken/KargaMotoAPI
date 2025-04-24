@@ -3,6 +3,11 @@ const router = express.Router();
 const controller = require("../controller/controller");
 const authMiddleware = require("../middleware/authmiddleware");
 
+//test connection
+router.get('/api/ping', (req, res) => {
+    res.status(200).json({ message: "Pong" });
+});
+
 //temporary
 router.post('/api/drivers', controller.createDriver);
 router.get('/api/test', authMiddleware, controller.testMiddleware);
