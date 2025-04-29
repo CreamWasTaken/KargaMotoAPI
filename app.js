@@ -68,20 +68,10 @@ server.listen(PORT, '0.0.0.0', () => {
 
 //add auto logout after token expiry
 
-//add no internet connection screen
-
-//add no connection to sever screen
-
-//add distance and time to booking collection 
-
-//add in kargamotoapp to emit newbooking event to all drivers
-
 //add in kargamotoapp to emit delete and updating if status of booking to all drivers
 
 //add to filter location where drive can only see booking in his area
   
-
-//profile setting screen is gone 
 
 //use hybrid set up for socket and rest api
 

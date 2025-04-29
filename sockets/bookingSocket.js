@@ -16,23 +16,23 @@ module.exports = (io, socket) => {
     });
 
     // Handle new booking creation
-    socket.on('newBooking', async (bookingData) => {
-        try {
-            // Validate and save to database
-            const newBooking = new Bookings(bookingData);
-            const savedBooking = await newBooking.save();
+    // socket.on('newBooking', async (bookingData) => {
+    //     try {
+    //         // Validate and save to database
+    //         const newBooking = new Bookings(bookingData);
+    //         const savedBooking = await newBooking.save();
             
-            // Broadcast to all connected clients
-            io.emit('bookingUpdate', {
-                action: 'created',
-                booking: savedBooking
-            });
+    //         // Broadcast to all connected clients
+    //         io.emit('bookingUpdate', {
+    //             action: 'created',
+    //             booking: savedBooking
+    //         });
             
-        } catch (error) {
-            console.error('Error creating booking:', error);
-            socket.emit('error', { message: 'Failed to create booking' });
-        }
-    });
+    //     } catch (error) {
+    //         console.error('Error creating booking:', error);
+    //         socket.emit('error', { message: 'Failed to create booking' });
+    //     }
+    // });
 
     // Handle booking status updates
     socket.on('updateBookingStatus', async ({ bookingId, newStatus }) => {
