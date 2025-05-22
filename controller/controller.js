@@ -374,14 +374,110 @@ exports.bookService = async (req, res) => {
   //   }
   // }
 
-exports.getBookings = async (req, res) => {
+  exports.getBookings = async (req, res) => {
+    try {
+      const bookings = await Bookings.find({})
+        .populate({
+          path: 'passenger_id',
+          model: 'Users',
+          select: 'full_name phone_number'
+        })
+        .populate({
+          path: 'driver_id',
+          model: 'Drivers',
+          select: 'license_number vehicle status rating driver_id',
+          populate: {
+            path: 'driver_id',
+            model: 'Users',
+            select: 'full_name phone_number'
+          }
+        });
+  
+      const formattedBookings = bookings.map(booking => ({
+        booking_id: booking._id,
+        booking_type: booking.booking_type,
+        status: booking.status,
+        passenger: {
+          id: booking.passenger_id?._id,
+          name: booking.passenger_id?.full_name,
+          phone: booking.passenger_id?.phone_number
+        },
+        driver: booking.driver_id ? {
+          id: booking.driver_id._id,
+          name: booking.driver_id.driver_id?.full_name || 'Unknown',
+          phone: booking.driver_id.driver_id?.phone_number || 'Unknown',
+          license: booking.driver_id.license_number,
+          vehicle: booking.driver_id.vehicle
+        } : null,
+        trip_details: {
+          pickup: booking.pickup_location,
+          dropoff: booking.dropoff_location,
+          fare: booking.fare,
+          distance: booking.distance,
+          duration: booking.duration
+        },
+        created_at: booking.created_at
+      }));
+  
+      res.status(200).json({
+        success: true,
+        count: formattedBookings.length,
+        data: formattedBookings
+      });
+  
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+      res.status(500).json({
+        success: false,
+        error: 'Server Error',
+        message: err.message
+      });
+    }
+  };
+  
+  exports.acceptBooking = async (req, res) => {
   try {
-    const bookings = await Bookings.find({ status: "requested" });
-    res.status(200).json({ data: bookings });
+    const user_id = req.user._id;
+    const { booking_id } = req.body;
+
+    const driver = await Drivers.findOne({ driver_id: user_id });
+    if (!driver) {
+      return res.status(404).json({ error: "Driver record not found" });
+    }
+
+    const booking = await Bookings.findByIdAndUpdate(
+      booking_id,
+      { 
+        status: "accepted", 
+        driver_id: driver._id,
+        updated_at: new Date() // Add this for proper sorting
+      },
+      { new: true }
+    ).populate('driver_id'); // Populate driver details if needed
+
+    const io = req.app.get("io");
+    
+    // More targeted emission options:
+    // Option 1: Emit to all clients
+    io.emit("bookingUpdate", {
+      action: "status-updated", // Consistent with your frontend handler
+      booking: booking.toObject() // Convert to plain object
+    });
+    
+    // Option 2: Emit to specific room (recommended)
+    // io.to(`booking_${booking_id}`).emit("bookingUpdate", {...});
+    
+    res.status(200).json({ 
+      status: "Booking accepted successfully",
+      booking // Return updated booking
+    });
+    
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-}
+};
+  
+
 
 exports.cancelBookings = async (req, res) => {
   try {
@@ -526,6 +622,9 @@ exports.getFavorites = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+
+
 
 
 

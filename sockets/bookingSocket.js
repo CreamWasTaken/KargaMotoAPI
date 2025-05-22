@@ -6,7 +6,7 @@ module.exports = (io, socket) => {
     // Get requested bookings
     socket.on('getRequestedBookings', async () => {
         try {
-            const requestedBookings = await Bookings.find({ status: "requested" })
+            const requestedBookings = await Bookings.find({})
                 .sort({ created_at: -1 }); // Newest first
             socket.emit('requestedBookingsData', requestedBookings);
         } catch (error) {

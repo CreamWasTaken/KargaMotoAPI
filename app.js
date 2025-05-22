@@ -70,7 +70,11 @@ server.listen(PORT, '0.0.0.0', () => {
 
 //add in kargamotoapp to emit delete and updating if status of booking to all drivers
 
+//fix update not updating on all drivers
+
 //add to filter location where drive can only see booking in his area
+
+//move the google api key calls to backend and then send it to the frontend
   
 
 //use hybrid set up for socket and rest api

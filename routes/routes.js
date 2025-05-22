@@ -32,10 +32,16 @@ router.post('/api/update-user-details', controller.updateUserDetails);
 //booking
 router.post('/api/book-service', authMiddleware, controller.bookService);
 router.get('/api/get-bookings', authMiddleware, controller.getBookings);
+router.post('/api/accept-booking', authMiddleware, controller.acceptBooking);
 
 //Favorite Locations
 router.post('/api/add-favorites', authMiddleware, controller.addFavorites);
 router.get('/api/get-favorites', authMiddleware, controller.getFavorites);
 router.post('/api/delete-favorites', authMiddleware, controller.deleteFavorites);
+
+
+//API to Web
+// router.post('/api/get-drivers', controller.getDrivers);
+router.post('/api/get-booking-details', controller.getBookings);
 
 module.exports = router; 
